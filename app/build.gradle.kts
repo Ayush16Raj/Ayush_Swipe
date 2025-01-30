@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.ayush_swipe"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.ayush_swipe"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,8 +63,6 @@ dependencies {
 
     implementation (libs.androidx.lifecycle.viewmodel.ktx)
     implementation (libs.androidx.lifecycle.runtime.ktx.v261)
-    implementation (libs.androidx.navigation.fragment.ktx)
-    implementation (libs.androidx.navigation.ui.ktx)
 
     // Retrofit & OkHttp
     implementation (libs.retrofit)
@@ -74,11 +74,10 @@ dependencies {
 
     // Room Database (Offline Support)
     implementation (libs.androidx.room.runtime)
+    implementation (libs.androidx.room.ktx)
     ksp (libs.androidx.room.compiler)
 
     // KOIN for Dependency Injection
     implementation (libs.koin.android)
 
-    // WorkManager for background syncing
-    implementation (libs.androidx.work.runtime.ktx)
 }

@@ -10,7 +10,7 @@ import com.example.ayush_swipe.model.ProductEntity
 @Dao
 interface ProductDao {
     @Query("SELECT * FROM products")
-    fun getAllProducts(): LiveData<List<ProductEntity>>
+    fun getAllProducts(): List<ProductEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: ProductEntity)

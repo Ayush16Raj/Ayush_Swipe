@@ -11,11 +11,11 @@ import okhttp3.RequestBody
 import retrofit2.Response
 
 interface ProductApi {
-    @GET("public/get")
+    @GET("api/public/get")
     suspend fun getProducts(): List<ProductEntity>
 
     @Multipart
-    @POST("public/add")
+    @POST("api/public/add")
     suspend fun addProduct(
         @Part("product_name") productName: RequestBody,
         @Part("price") price: RequestBody,

@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 val appModule = module {
     single { Retrofit.Builder()
-        .baseUrl("https://app.getswipe.in/api/public/")
+        .baseUrl("https://app.getswipe.in/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(ProductApi::class.java) }
