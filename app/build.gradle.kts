@@ -80,4 +80,6 @@ dependencies {
     // KOIN for Dependency Injection
     implementation (libs.koin.android)
 
+    //Splash Api
+    implementation(libs.androidx.core.splashscreen)
 }

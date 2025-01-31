@@ -22,12 +22,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.ayush_swipe.model.ProductEntity
 import com.example.ayush_swipe.viewmodel.ProductViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProductListScreen(navController: NavController, viewModel: ProductViewModel) {
@@ -163,7 +165,7 @@ fun ProductItem(product: ProductEntity) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
+fun AddProductScreen(onDismiss: () -> Unit, viewModel: ProductViewModel = viewModel()) {
     var productName by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var tax by remember { mutableStateOf("") }
@@ -171,9 +173,9 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isUploading by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
-
-
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var apiErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
 
@@ -201,24 +203,28 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
 
             TextField(
                 value = productName, onValueChange = { productName = it },
-                label = { Text("Product Name") }, modifier = Modifier.fillMaxWidth()
+                label = { Text("Product Name") }, modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             TextField(
                 value = price, onValueChange = { price = it },
                 label = { Text("Price") }, modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
 
             TextField(
                 value = tax, onValueChange = { tax = it },
                 label = { Text("Tax") }, modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
 
             TextField(
                 value = productType, onValueChange = { productType = it },
-                label = { Text("Product Type") }, modifier = Modifier.fillMaxWidth()
+                label = { Text("Product Type") }, modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Button(
@@ -249,6 +255,12 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
             } else {
                 Button(
                     onClick = {
+                        // Validate input fields
+                        if (productName.isBlank() || price.isBlank() || tax.isBlank() || productType.isBlank()) {
+                            errorMessage = "Please fill all fields"
+                            return@Button
+                        }
+
                         isUploading = true
                         val product = ProductEntity(
                             product_name = productName,
@@ -257,9 +269,19 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
                             product_type = productType,
                             image = imageUri?.toString()
                         )
-                        viewModel.addProduct(product)
-                        isUploading = false
-                        showDialog = true
+
+                        // Call ViewModel to add product
+                        viewModel.viewModelScope.launch {
+                            try {
+                                viewModel.addProduct(context, product)
+                                showSuccessDialog = true // Show success dialog
+                            } catch (e: Exception) {
+                                apiErrorMessage = "Failed to add product: ${e.message}"
+                                showErrorDialog = true // Show error dialog
+                            } finally {
+                                isUploading = false
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -269,14 +291,15 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
         }
     }
 
-    if (showDialog) {
+    // Success Dialog
+    if (showSuccessDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showSuccessDialog = false },
             title = { Text("Success") },
             text = { Text("Product added successfully!") },
             confirmButton = {
                 Button(onClick = {
-                    showDialog = false
+                    showSuccessDialog = false
                     onDismiss()
                     Toast.makeText(context, "Product Added", Toast.LENGTH_SHORT).show()
                 }) {
@@ -285,9 +308,21 @@ fun AddProductScreen(viewModel: ProductViewModel, onDismiss: () -> Unit) {
             }
         )
     }
+
+    // Error Dialog
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            title = { Text("Error") },
+            text = { Text(apiErrorMessage ?: "An unknown error occurred") },
+            confirmButton = {
+                Button(onClick = { showErrorDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 }
-
-
 // Function to validate image format and aspect ratio
 private fun validateImage(context: Context, uri: Uri): Boolean {
     val inputStream = context.contentResolver.openInputStream(uri)

@@ -1,5 +1,6 @@
 package com.example.ayush_swipe.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -22,29 +23,48 @@ class ProductViewModel(private val repository: ProductRepository) : ViewModel() 
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> get() = _errorMessage
 
+    init {
+        fetchProducts()
+    }
+
     // Fetch products from the repository
     fun fetchProducts() {
-        _isLoading.value = true // Show loading state
+        _isLoading.value = true
+        _errorMessage.value = null
         viewModelScope.launch {
             try {
                 // Fetch products from the repository
                 val productList = repository.fetchProducts()
-                _products.value = productList // Update LiveData with fetched products
+                _products.value = productList
             } catch (e: Exception) {
                 // Handle errors
                 _errorMessage.value = "Failed to fetch products: ${e.message}"
             } finally {
-                _isLoading.value = false // Hide loading state
+                _isLoading.value = false
             }
         }
     }
 
     // Add a new product
-    fun addProduct(product: ProductEntity) {
+    fun addProduct(context: Context, product: ProductEntity) {
         viewModelScope.launch {
             try {
+                // Validate product fields
+                if (product.product_name.isBlank()) {
+                    _errorMessage.value = "Product name cannot be empty"
+                    return@launch
+                }
+                if (product.price <= 0) {
+                    _errorMessage.value = "Price must be greater than 0"
+                    return@launch
+                }
+                if (product.tax < 0) {
+                    _errorMessage.value = "Tax cannot be negative"
+                    return@launch
+                }
+
                 // Add product to the repository
-                repository.addProduct(product)
+                repository.addProduct(context, product)
                 // Refresh the product list after adding a new product
                 fetchProducts()
             } catch (e: Exception) {
